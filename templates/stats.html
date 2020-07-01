@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Stats</title>
+    {% import 'feachers.html' as feachers %}
+    {{ feachers.headers() }}
+</head>
+<body>
+
+<table class="table">
+    <thead>
+    <tr>
+        <th scope="col">#</th>
+        <th scope="col">Пример</th>
+        <th scope="col">Введенный ответ</th>
+        <th scope="col">Правильный ответ</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for i in db %}
+        <tr class="table-{{ i['correct'] }}">
+            <th scope="row">{{ 1+i['i'] }}</th>
+            <td>{{ i['exc'] }}</td>
+            <td>{{ i['wrote'] }}</td>
+            <td>{{ i['cor'] }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+</body>
+</html>

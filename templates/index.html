@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Main</title>
+    {% import 'feachers.html' as feachers %}
+    {{ feachers.headers() }}
+</head>
+<style>
+    :root {
+        --color: black;
+        --correct: #0D8800;
+        --incorrect: #FF7640;
+    }
+
+    body {
+        width: 80%;
+        margin: 0 auto;
+        font-family: Tahoma, Verdana, Arial, sans-serif;
+        font-size: 14em;
+    }
+
+    .all {
+        display: inline-block;
+        color: var(--color);
+    }
+
+    .divs {
+        margin-top: 50px;
+    }
+
+    .result {
+        display: inline-block;
+        height: 200px;
+        font-size: 1em;
+        width: 300px;
+    }
+
+    .btn {
+        padding: 40px;
+        font-size: 14pt;
+    }
+</style>
+<body>
+<form>
+    <div class="all first divs" id="first">{{ first }}</div>
+    <div class="all op divs" id="op">{{ op }}</div>
+    <div class="all second divs" id="second">{{ second }}</div>
+    <div class="all eq divs">=</div>
+    <label style="margin-top: 50px; margin-left: 20px; position:absolute;">
+        <input type="number" class="all result" max="100" id="answer--" autofocus>
+    </label><br/>
+    <input onclick="next()" type="button" class="btn" value="send">
+</form>
+<br/>
+<script>
+    let blocked = false;
+    document.getElementById("answer--").addEventListener("keydown", function (e) {
+        // e.preventDefault(); // sometimes useful
+        // Enter is pressed
+        console.log(e.code)
+        if (e.code === 'Enter' || e.code === 'NumpadEnter') {
+            next();
+            e.preventDefault();
+        }
+    }, false);
+
+    function next() {
+        if (blocked) return;
+        $.ajax({
+            method: 'POST',
+            url: '/send_answer',
+            data: JSON.stringify({
+                first: $('#first')[0].innerText,
+                op: $('#op')[0].innerText,
+                second: $('#second')[0].innerText,
+                answer: $('#answer--').val(),
+            }),
+            success: (r) => {
+                blocked = true;
+                let n = 'correct';
+                if (r === '0') {
+                    n = 'in' + n;
+                }
+                console.log(r);
+                document.documentElement.style.setProperty('--color', 'var(--' + n + ')');
+                setTimeout(() => {
+                    document.location.href = '/';
+                }, 500)
+            },
+            error: (r) => {
+                console.log(r);
+            }
+        });
+    }
+</script>
+</body>
+</html>

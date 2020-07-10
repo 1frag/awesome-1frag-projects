@@ -82,12 +82,6 @@ async def stats(request: aiohttp.web.Request):
     return {'db': from_db}
 
 
-async def clear_stats(request: aiohttp.web.Request):
-    global db
-    db = []
-    return aiohttp.web.Response(body='Ok')
-
-
 async def database(_):
     global db
     config = {'dsn': os.getenv('DATABASE_URL')}

@@ -5,8 +5,10 @@ import json
 import os
 import random
 import datetime
+import aiopg.sa
+import typing
 
-db = []  # ha-ha
+db: typing.Optional[aiopg.sa.engine.Engine] = None
 RULE = {
     'x': lambda a, b: a * b,
     '/': lambda a, b: a / b,
@@ -15,7 +17,7 @@ RULE = {
 
 @aiohttp_jinja2.template('index.html')
 async def main(request: aiohttp.web.Request):
-    for_first = [3, 4]
+    for_first = [2, 3, 4]
     for_second = list(range(2, 11))
     for_op = ['x', '/']
 
@@ -57,26 +59,27 @@ async def send_answer(request: aiohttp.web.Request):
         print(e.__class__, e)
         res = False
 
-    db.append({
-        'first': first,
-        'op': op,
-        'second': second,
-        'answer': answer,
-        'res': res,
-        'created_at': datetime.datetime.now(),
-    })
+    async with db.acquire() as conn:
+        conn: aiopg.sa.SAConnection
+        await conn.execute('''
+            insert into app_answer (first, op, second, answer, res)
+            values (%s, %s, %s, %s, %s)
+        ''')
     return aiohttp.web.Response(body=str(int(res)))
 
 
 @aiohttp_jinja2.template('stats.html')
 async def stats(request: aiohttp.web.Request):
-    return {'db': [{
-        'i': j,
-        'exc': str(i['first']) + i['op'] + str(i['second']),
-        'cor': RULE[i['op']](i['first'], i['second']),
-        'wrote': i['answer'],
-        'correct': 'success' if i['res'] else 'danger',
-    } for j, i in enumerate(db)]}
+    async with db.acquire() as conn:
+        from_db = await (await conn.execute('''
+            select id,
+                   concat(first, ' ', op, ' ', second) as exc,
+                   calc(first, op, second) as cor,
+                   answer as wrote,
+                   css_class(res) as correct
+            from app_answer;
+        ''')).fetchall()
+    return {'db': from_db}
 
 
 async def clear_stats(request: aiohttp.web.Request):
@@ -85,8 +88,18 @@ async def clear_stats(request: aiohttp.web.Request):
     return aiohttp.web.Response(body='Ok')
 
 
+async def database(_):
+    global db
+    config = {'dsn': os.getenv('DATABASE_URL')}
+    db = await aiopg.sa.create_engine(**config)
+    yield
+    db.close()
+    await db.wait_closed()
+
+
 if __name__ == '__main__':
     app = aiohttp.web.Application()
+    app.cleanup_ctx.append(database)
     app.add_routes([
         aiohttp.web.get('/', main),
         aiohttp.web.post('/send_answer', send_answer),

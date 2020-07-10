@@ -20,7 +20,7 @@
     <tbody>
     {% for i in db %}
         <tr class="table-{{ i['correct'] }}">
-            <th scope="row">{{ 1+i['i'] }}</th>
+            <th scope="row">{{ i['id'] }}</th>
             <td>{{ i['exc'] }}</td>
             <td>{{ i['wrote'] }}</td>
             <td>{{ i['cor'] }}</td>

@@ -98,7 +98,6 @@ if __name__ == '__main__':
         aiohttp.web.get('/', main),
         aiohttp.web.post('/send_answer', send_answer),
         aiohttp.web.get('/stats', stats),
-        aiohttp.web.post('/clear', clear_stats),
     ])
     aiohttp_jinja2.setup(
         app, loader=jinja2.FileSystemLoader('./templates'),

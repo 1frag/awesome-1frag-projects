@@ -64,6 +64,7 @@ async def send_answer(request: aiohttp.web.Request):
         await conn.execute('''
             insert into app_answer (first, op, second, answer, res)
             values (%s, %s, %s, %s, %s)
+            order by created_at
         ''', (first, op, second, answer, res))
     return aiohttp.web.Response(body=str(int(res)))
 
@@ -73,18 +74,28 @@ async def stats(request: aiohttp.web.Request):
     async with db.acquire() as conn:
         from_db = await (await conn.execute('''
             select id,
-                   concat(first, ' ', op, ' ', second) as exc,
-                   calc(first, op, second) as cor,
-                   answer as wrote,
-                   css_class(res) as correct
-            from app_answer;
+                   created_at::date                     as day,
+                   concat(first, ' ', op, ' ', second)  as exc,
+                   calc(first, op, second)              as cor,
+                   answer                               as wrote,
+                   css_class(res)                       as correct
+            from app_answer
+            order by created_at;
         ''')).fetchall()
-    return {'db': from_db}
+        stats_days = await (await conn.execute('''
+            select created_at::date as day,
+                   sum(res::int)    as good,
+                   count(*)         as total
+            from app_answer
+            group by created_at::date;
+        ''')).fetchall()
+        stats_days = {x['day']: x for x in stats_days}
+    return {'db': from_db, 'stats': stats_days}
 
 
 async def database(_):
     global db
-    config = {'dsn': os.getenv('DATABASE_URL')}
+    config = {'dsn': os.getenv('DATABASE_URL') or input('db dsn: ')}
     db = await aiopg.sa.create_engine(**config)
     yield
     db.close()

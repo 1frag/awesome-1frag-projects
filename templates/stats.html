@@ -8,6 +8,10 @@
 </head>
 <body>
 
+{% if db.__len__() == 0 %}
+Пока что данных нет.
+{% else %}
+
 <table class="table">
     <thead>
     <tr>
@@ -17,17 +21,31 @@
         <th scope="col">Правильный ответ</th>
     </tr>
     </thead>
+    {% for day, iterable in db|groupby('day') %}
     <tbody>
-    {% for i in db %}
-        <tr class="table-{{ i['correct'] }}">
-            <th scope="row">{{ i['id'] }}</th>
-            <td>{{ i['exc'] }}</td>
-            <td>{{ i['wrote'] }}</td>
-            <td>{{ i['cor'] }}</td>
+        <tr class="clickable table-info"
+            data-toggle="collapse"
+            data-target="#g-{{ day }}"
+            aria-expanded="false"
+            aria-controls="g-{{ day }}">
+            <th colspan="2" class="bold">{{ day }}</th>
+            <td colspan="2">{{ stats[day]['good'] }} верно из
+                {{ stats[day]['total'] }}</td>
         </tr>
-    {% endfor %}
     </tbody>
+    <tbody id="g-{{ day }}" class="collapse">
+        {% for i in iterable %}
+                <tr class="table-{{ i['correct'] }}">
+                    <th scope="row">{{ loop.index }}</th>
+                    <td>{{ i['exc'] }}</td>
+                    <td>{{ i['wrote'] }}</td>
+                    <td>{{ i['cor'] }}</td>
+                </tr>
+        {% endfor %}
+    </tbody>
+    {% endfor %}
 </table>
+{% endif %}
 
 </body>
 </html>

@@ -5,7 +5,7 @@ create table app_answer (
    second int not null,
    answer text,
    res bool not null,
-   created_at time default now()
+   created_at timestamp default now()
 );
 
 create or replace function calc(

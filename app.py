@@ -64,7 +64,7 @@ async def send_answer(request: aiohttp.web.Request):
         await conn.execute('''
             insert into app_answer (first, op, second, answer, res)
             values (%s, %s, %s, %s, %s)
-        ''')
+        ''', (first, op, second, answer, res))
     return aiohttp.web.Response(body=str(int(res)))
 
 

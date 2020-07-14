@@ -17,7 +17,7 @@ RULE = {
 
 @aiohttp_jinja2.template('index.html')
 async def main(request: aiohttp.web.Request):
-    for_first = [2, 3, 4, 5]
+    for_first = [2, 3, 4, 5, 6]
     for_second = list(range(2, 11))
     for_op = ['x', '/']
 

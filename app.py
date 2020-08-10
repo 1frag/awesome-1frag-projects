@@ -101,6 +101,13 @@ async def database(_):
     await db.wait_closed()
 
 
+async def callback(request):
+    data = await request.read()
+    headers = request.headers
+    print(f'Request#{id(request)}:\n{data=}\n{headers=}\n\n')
+    return aiohttp.web.Response(status=200)
+
+
 if __name__ == '__main__':
     app = aiohttp.web.Application()
     app.cleanup_ctx.append(database)
@@ -108,6 +115,7 @@ if __name__ == '__main__':
         aiohttp.web.get('/', main),
         aiohttp.web.post('/send_answer', send_answer),
         aiohttp.web.get('/stats', stats),
+        aiohttp.web.route('*', '/callback', callback),
     ])
     aiohttp_jinja2.setup(
         app, loader=jinja2.FileSystemLoader('./templates'),

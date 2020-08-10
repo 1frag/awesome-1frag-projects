@@ -104,8 +104,8 @@ async def database(_):
 async def callback(request):
     data = await request.read()
     headers = request.headers
-    print(f'Request#{id(request)}:\n{data=}\n{headers=}\n\n')
-    return aiohttp.web.Response(status=200)
+    print(f'Request#{id(request)}:\n{data=}\n{headers=}\n{request.rel_url}\n')
+    return aiohttp.web.Response(status=200, text='')
 
 
 if __name__ == '__main__':

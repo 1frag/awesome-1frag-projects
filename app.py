@@ -7,12 +7,14 @@ import random
 import datetime
 import aiopg.sa
 import typing
+from bs4 import BeautifulSoup
 
 db: typing.Optional[aiopg.sa.engine.Engine] = None
 RULE = {
     'x': lambda a, b: a * b,
     '/': lambda a, b: a / b,
 }
+DIGEST = None
 
 
 @aiohttp_jinja2.template('index.html')
@@ -108,7 +110,71 @@ async def callback(request):
     return aiohttp.web.Response(status=200, text='')
 
 
+# sudoku part
+class Mock:
+    attrs = {'d': None}
+
+
+def init():
+    global DIGEST
+    with open('./digest.json') as f:
+        DIGEST = json.load(f)
+
+
+def parse_field(pure_html):
+    get_path = lambda e: e.find('div', class_='cell-value').find('path')
+    get_num = lambda e: DIGEST.get((get_path(e) or Mock()).attrs['d'])
+    soup = BeautifulSoup(pure_html, 'html.parser')
+    f = [get_num(e) for e in soup.find_all('td')]
+    return [list(k) for k in zip(*[iter(f)]*9)]
+
+
+def check(field):
+    _check = lambda q: len(r:=[t for t in q if t]) == len(set(r))
+    # row
+    for row in field:
+        if not _check(row):
+            return False
+    # column
+    for i in range(9):
+        if not _check([e[i] for e in field]):
+            return False
+    # cube
+    for i in range(3):
+        for j in range(3):
+            p = [r[3*j:3+3*j] for r in field[3*i:3+3*i]]
+            if not _check(p[0] + p[1] + p[2]):
+                return False
+    return True
+
+
+def solve(field, i=0, j=0):
+    if i == 9 and j == 0:
+        return True
+    next_i, next_j = (i + 1, 0) if (j == 8) else (i, j + 1)
+    if field[i][j] is not None:
+        return solve(field, next_i, next_j)
+    for k in range(1, 10):
+        field[i][j] = k
+        if check(field) and solve(field, next_i, next_j):
+            return True
+    field[i][j] = None
+    return False
+
+
+async def sudoku_handler(request):
+    ws = aiohttp.web.WebSocketResponse()
+    await ws.prepare(request)
+    async for msg in ws:
+        field = parse_field(msg.data)
+        if solve(field):
+            await ws.send_json(field)
+        else:
+            await ws.send_json(dict(result=False))
+
+
 if __name__ == '__main__':
+    init()
     app = aiohttp.web.Application()
     app.cleanup_ctx.append(database)
     app.add_routes([
@@ -116,8 +182,10 @@ if __name__ == '__main__':
         aiohttp.web.post('/send_answer', send_answer),
         aiohttp.web.get('/stats', stats),
         aiohttp.web.route('*', '/callback', callback),
+        aiohttp.web.get('/sudoku-solver', sudoku_handler),
     ])
     aiohttp_jinja2.setup(
         app, loader=jinja2.FileSystemLoader('./templates'),
     )
     aiohttp.web.run_app(app, port=os.getenv('PORT', 9090))
+

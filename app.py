@@ -12,6 +12,8 @@ import base64
 from bs4 import BeautifulSoup
 from aiomisc import timeout, threaded
 
+from cpp_extend import sudoku
+
 db: typing.Optional[aiopg.sa.engine.Engine] = None
 RULE = {
     'x': lambda a, b: a * b,
@@ -132,6 +134,7 @@ def parse_field(pure_html):
     return [list(k) for k in zip(*[iter(f)]*9)]
 
 
+''' Slow realization on Python. Now using c++ sudoku extention to solve problems
 def check(field):
     _check = lambda q: len(r:=[t for t in q if t]) == len(set(r))
     # row
@@ -168,7 +171,13 @@ async def solve(field_):
             field[i][j] = None
             return False
         return wrapper(0, 0)
-    return await _solve(field_)
+    await _solve(field_)
+    return field_
+'''
+
+
+async def solve(field_):
+    return sudoku.solve(field_)
 
 
 def pretty_print(field):
@@ -195,7 +204,7 @@ async def sudoku_handler(request):
         print('New query:'); pretty_print(field)
         print(base64.encodebytes(json.dumps(field).encode()).decode())
         try:
-            if await solve(field):
+            if field := await solve(field):
                 await ws.send_json(field)
                 print('Result:'); pretty_print(field)
             else:

@@ -1,20 +1,3 @@
-/*
-def _solve(field):
-    def wrapper(i, j):
-        if i == 9 and j == 0:
-            return True
-        next_i, next_j = (i + 1, 0) if (j == 8) else (i, j + 1)
-        if field[i][j] is not None:
-            return wrapper(next_i, next_j)
-        for k in range(1, 10):
-            field[i][j] = str(k)
-            if check(field) and wrapper(next_i, next_j):
-                return True
-        field[i][j] = None
-        return False
-    return wrapper(0, 0)
-*/
-
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <string>

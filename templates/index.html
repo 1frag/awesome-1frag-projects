@@ -69,7 +69,7 @@
         if (blocked) return;
         $.ajax({
             method: 'POST',
-            url: '/send_answer',
+            url: '/math-tester/send_answer',
             data: JSON.stringify({
                 first: $('#first')[0].innerText,
                 op: $('#op')[0].innerText,

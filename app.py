@@ -101,21 +101,28 @@ async def stats(request: aiohttp.web.Request):
 
 async def database(_):
     global db
-    config = {'dsn': os.getenv('DATABASE_URL') or input('db dsn: ')}
+    def get_dsn():
+        if dsn := os.getenv('DATABASE_URL'):
+            return dsn
+        try:
+            return json.loads(os.popen('heroku config -j').read())['DATABASE_URL']
+        except Exception:
+            pass
+        return input('db dsn: ')
+    config = {'dsn': get_dsn()}
     db = await aiopg.sa.create_engine(**config)
     yield
     db.close()
     await db.wait_closed()
 
 
-async def callback(request):
+async def callback_handler(request):
     data = await request.read()
     headers = request.headers
     print(f'Request#{id(request)}:\n{data=}\n{headers=}\n{request.rel_url}\n')
     return aiohttp.web.Response(status=200, text='')
 
 
-# sudoku part
 class Mock:
     attrs = {'d': None}
 
@@ -132,48 +139,6 @@ def parse_field(pure_html):
     soup = BeautifulSoup(pure_html, 'html.parser')
     f = [get_num(e) for e in soup.find_all('td')]
     return [list(k) for k in zip(*[iter(f)]*9)]
-
-
-''' Slow realization on Python. Now using c++ sudoku extention to solve problems
-def check(field):
-    _check = lambda q: len(r:=[t for t in q if t]) == len(set(r))
-    # row
-    for row in field:
-        if not _check(row):
-            return False
-    # column
-    for i in range(9):
-        if not _check([e[i] for e in field]):
-            return False
-    # cube
-    for i in range(3):
-        for j in range(3):
-            p = [r[3*j:3+3*j] for r in field[3*i:3+3*i]]
-            if not _check(p[0] + p[1] + p[2]):
-                return False
-    return True
-
-
-@timeout(45)  # sec
-async def solve(field_):
-    @threaded
-    def _solve(field):
-        def wrapper(i, j):
-            if i == 9 and j == 0:
-                return True
-            next_i, next_j = (i + 1, 0) if (j == 8) else (i, j + 1)
-            if field[i][j] is not None:
-                return wrapper(next_i, next_j)
-            for k in range(1, 10):
-                field[i][j] = str(k)
-                if check(field) and wrapper(next_i, next_j):
-                    return True
-            field[i][j] = None
-            return False
-        return wrapper(0, 0)
-    await _solve(field_)
-    return field_
-'''
 
 
 async def solve(field_):
@@ -217,16 +182,35 @@ async def sudoku_handler(request):
         await ws.close()
 
 
+async def upload_handler(request):
+    if not (name := request.query['name']):
+        raise aiohttp.web.Response(status=400)
+    path = f'./static/upload/{name}'
+    if (method := request.method) == 'POST':
+        reader = await request.multipart()
+        with open(path, 'wb') as fl:
+            while not reader.at_eof():
+                bdrd = await reader.next()
+                while bdrd and not bdrd.at_eof():
+                    fl.write(await bdrd.read())
+        return aiohttp.web.Response(status=201)
+    elif method == 'DELETE':
+        os.remove(path)
+        return aiohttp.web.Response(status=204)
+    return aiohttp.web.Response(status=405)
+
+
 if __name__ == '__main__':
     init()
     app = aiohttp.web.Application()
     app.cleanup_ctx.append(database)
     app.add_routes([
-        aiohttp.web.get('/', main),
-        aiohttp.web.post('/send_answer', send_answer),
-        aiohttp.web.get('/stats', stats),
-        aiohttp.web.route('*', '/callback', callback),
+        aiohttp.web.get('/math-tester', main),
+        aiohttp.web.post('/math-tester/send_answer', send_answer),
+        aiohttp.web.get('/math-tester/stats', stats),
+        aiohttp.web.route('*', '/callback', callback_handler),
         aiohttp.web.get('/sudoku-solver', sudoku_handler),
+        aiohttp.web.route('*', '/upload', upload_handler),
     ])
     aiohttp_jinja2.setup(
         app, loader=jinja2.FileSystemLoader('./templates'),

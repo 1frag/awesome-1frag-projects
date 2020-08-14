@@ -19,13 +19,15 @@ RULE = {
     'x': lambda a, b: a * b,
     '/': lambda a, b: a / b,
 }
+with open('./static/upload/settings.json') as f:
+    SETTINGS = json.load(f)
 DIGEST = None
 
 
 @aiohttp_jinja2.template('index.html')
 async def main(request: aiohttp.web.Request):
-    for_first = [2, 3, 4, 5, 6]
-    for_second = list(range(2, 11))
+    for_first = SETTINGS['math-tester']['for-first']
+    for_second = SETTINGS['math-tester']['for-second']
     for_op = ['x', '/']
 
     first = random.choice(for_first)

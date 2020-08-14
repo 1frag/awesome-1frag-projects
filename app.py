@@ -211,6 +211,7 @@ if __name__ == '__main__':
         aiohttp.web.route('*', '/callback', callback_handler),
         aiohttp.web.get('/sudoku-solver', sudoku_handler),
         aiohttp.web.route('*', '/upload', upload_handler),
+        aiohttp.web.static('/static', './static'),
     ])
     aiohttp_jinja2.setup(
         app, loader=jinja2.FileSystemLoader('./templates'),

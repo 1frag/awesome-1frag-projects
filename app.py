@@ -1,3 +1,4 @@
+import asyncio
 import aiohttp.web
 import aiohttp_jinja2
 import jinja2
@@ -99,6 +100,15 @@ async def stats(request: aiohttp.web.Request):
         ''')).fetchall()
         stats_days = {x['day']: x for x in stats_days}
     return {'db': from_db, 'stats': stats_days}
+
+
+async def refresh_settings(request):
+    await asyncio.sleep(10)
+    global SETTINGS
+    async with aiohttp.ClientSession() as sess:
+        async with sess.get(f'http://0.0.0.0:{os.getenv("PORT", 9090)}/static/upload/settings.json') as resp:
+            SETTINGS = await resp.json()
+    return aiohttp.web.json_response(SETTINGS)
 
 
 async def database(_):
@@ -210,6 +220,7 @@ if __name__ == '__main__':
         aiohttp.web.get('/math-tester', main),
         aiohttp.web.post('/math-tester/send_answer', send_answer),
         aiohttp.web.get('/math-tester/stats', stats),
+        aiohttp.web.get('/math-tester/refresh', refresh_settings),
         aiohttp.web.route('*', '/callback', callback_handler),
         aiohttp.web.get('/sudoku-solver', sudoku_handler),
         aiohttp.web.route('*', '/upload', upload_handler),

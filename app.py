@@ -6,14 +6,16 @@ import json
 import os
 import random
 import time
-import datetime
 import aiopg.sa
 import typing
 import base64
 from bs4 import BeautifulSoup
-from aiomisc import timeout, threaded
 
 from cpp_extend import sudoku
+try:
+    from ya_fetcher.web import routes as external_views
+except ImportError:
+    external_views = []
 
 db: typing.Optional[aiopg.sa.engine.Engine] = None
 RULE = {
@@ -226,6 +228,11 @@ if __name__ == '__main__':
         aiohttp.web.route('*', '/upload', upload_handler),
         aiohttp.web.static('/static', './static'),
     ])
+
+    ext_app = aiohttp.web.Application()
+    ext_app.add_routes(external_views)
+    app.add_subapp('/fetcher', ext_app)
+
     aiohttp_jinja2.setup(
         app, loader=jinja2.FileSystemLoader('./templates'),
     )

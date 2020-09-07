@@ -1,1 +1,1 @@
-web: python app.py
+web: /bin/bash run_app.sh

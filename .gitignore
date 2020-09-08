@@ -1,3 +1,6 @@
 .idea
 __pycache__/
 static/upload/*
+*.egg\-info
+build/*
+*.so

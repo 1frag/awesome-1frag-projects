@@ -61,7 +61,11 @@ optional<vector<vector<optional<string>>>> solve(
     return field_;
 }
 
-PYBIND11_MODULE(sudoku, m) {
+PYBIND11_MODULE(c_sudoku, m) {
     m.def("check", &check, "Validate field");
     m.def("solve", &solve, "Solve sudoku");
 }
+/*
+c++ -O3 -Wall -shared -fPIC `python3 -m pybind11 --includes` \
+    sudoku.cpp -o sudoku -std=c++17
+*/

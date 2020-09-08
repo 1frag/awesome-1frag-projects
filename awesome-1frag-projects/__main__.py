@@ -6,7 +6,10 @@ import os
 from .math_tester import MathTesterApp
 from .simplest import routes
 from .sudoku import SudokuApp
-from ya_fetcher.web import FetcherApp
+try:
+    from ya_fetcher.web import FetcherApp
+except ImportError:
+    FetcherApp = aiohttp.web.Application
 
 
 if __name__ == '__main__':

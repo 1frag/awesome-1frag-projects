@@ -1,6 +1,7 @@
 import aiohttp.web
 import time
 import json
+import os
 from typing import Optional
 import base64
 from bs4 import BeautifulSoup
@@ -8,11 +9,12 @@ from bs4 import BeautifulSoup
 import c_sudoku
 
 DIGEST: Optional[dict] = None
+_m, _ = os.path.split(__file__)
 try:
-    with open('./digest.json') as f:
+    with open(_m + '/digest.json') as f:
         DIGEST = json.load(f)
-except (FileNotFoundError, KeyError, json.JSONDecodeError):
-    DIGEST = None
+except (FileNotFoundError, KeyError, json.JSONDecodeError) as e:
+    raise ImportError(f'digest.json not found. {_m=} {e=}')
 
 
 class SudokuApp(aiohttp.web.Application):
@@ -37,7 +39,7 @@ def parse_field(pure_html):
 
 
 async def solve(field_):
-    return _sudoku.solve(field_)
+    return c_sudoku.solve(field_)
 
 
 def pretty_print(field):

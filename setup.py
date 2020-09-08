@@ -1,5 +1,9 @@
-import pybind11
+import os
+import sys
 from setuptools import Extension, find_packages, setup
+
+print(os.popen(f'{sys.executable} -m pip install pybind11').read())
+import pybind11  # noqa: we need to install pybind to run setup.py
 
 sudoku_c_ext = Extension(
     'c_sudoku',

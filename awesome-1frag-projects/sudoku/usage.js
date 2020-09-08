@@ -1,5 +1,5 @@
 // Run this code to solve sudoku-problem
-conn = new WebSocket('wss://math-tester.herokuapp.com/sudoku-solver');
+conn = new WebSocket('wss://math-tester.herokuapp.com/sudoku-solver/');
 conn.onmessage = evt => {
     i=0, j=0, JSON.parse(evt.data).forEach(row => {
         row.forEach(e => {

@@ -19,7 +19,7 @@ class SudokuApp(aiohttp.web.Application):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.add_routes([
-            aiohttp.web.get('/sudoku-solver', sudoku_handler),
+            aiohttp.web.get('/', sudoku_handler),
         ])
 
 

@@ -13,10 +13,6 @@ __all__ = 'MathTesterApp',
 db: typing.Optional[aiopg.sa.engine.Engine] = None
 RULE = {'x': operator.mul, '/': operator.floordiv}
 
-_m, _ = os.path.split(__file__)
-with open(_m + '/../static/upload/settings.json') as f:
-    SETTINGS = json.load(f)
-
 
 class MathTesterApp(aiohttp.web.Application):
     class Request(aiohttp.web.Request):

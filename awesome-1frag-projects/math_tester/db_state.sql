@@ -33,3 +33,11 @@ begin
     end if;
 end;
 $$ language plpgsql;
+
+create table app_settings (
+    key text primary key,
+    value text not null
+);
+insert into app_settings
+values ('mt_for_first', '[2,3,4,5,6,7,8,9]'),
+       ('mt_for_second', '[2,3,4,5,6,7,8,9]');

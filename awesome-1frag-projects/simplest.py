@@ -12,10 +12,10 @@ async def callback_handler(request):
 async def upload_handler(request):
     if not (name := request.query['name']):
         raise aiohttp.web.Response(status=400)
-    path = f'./static/upload/{name}'
+    path = f'/static/upload/{name}'
     if (method := request.method) == 'POST':
         reader = await request.multipart()
-        with open(path, 'wb') as fl:
+        with open(_m + path, 'wb') as fl:
             while not reader.at_eof():
                 bdrd = await reader.next()
                 while bdrd and not bdrd.at_eof():

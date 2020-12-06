@@ -1,12 +1,10 @@
-FROM python:3.8.5
+FROM python:3.9.0
 
 WORKDIR /app
-ARG requirements=requirements.txt
 
 ADD . /app
 RUN apt update -yq
-RUN pip install --no-cache-dir -e .
-RUN pip install --no-cache-dir -r $requirements
+RUN pip install -r requirements.txt
 
 RUN python setup.py install
 RUN chmod a+x /app/run_app.sh

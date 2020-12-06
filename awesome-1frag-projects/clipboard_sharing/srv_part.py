@@ -51,3 +51,7 @@ async def ws_handler(request: 'CSApp.Request'):
         if cur_msg.type == 'ws':
             await ws.send_str(cur_msg.data)
     return ws
+
+
+if __name__ == '__main__':
+    aiohttp.web.run_app(CSApp())

@@ -67,7 +67,7 @@ async def main(request: MathTesterApp.Request):
 
     first = random.choice(for_first)
     second = random.choice(for_second)
-    op = random.choice(for_op)
+    op = for_op[1 if random.randint(0, 100) < 80 else 1]
     answer = first * second
 
     if op == 'x':

@@ -1,20 +1,24 @@
-import aiohttp.web
-import time
+import itertools
 import json
-import os
-from typing import Optional
-import base64
+import logging
+import pathlib
+import time
+
+import aiohttp.web
+
 from bs4 import BeautifulSoup
 
-import c_sudoku
+from . import solver
 
-DIGEST: Optional[dict] = None
-_m, _ = os.path.split(__file__)
+
+logging.basicConfig(level=logging.DEBUG)
+
+DIGEST: dict
 try:
-    with open(_m + '/digest.json') as f:
-        DIGEST = json.load(f)
-except (FileNotFoundError, KeyError, json.JSONDecodeError) as e:
-    raise ImportError(f'digest.json not found. {_m=} {e=}')
+    with open(pathlib.Path(__file__).parent / 'digest.json') as _digest:
+        DIGEST = json.load(_digest)
+except (IOError, json.JSONDecodeError) as e:
+    raise ImportError(f'digest.json not found.')
 
 
 class SudokuApp(aiohttp.web.Application):
@@ -26,59 +30,35 @@ class SudokuApp(aiohttp.web.Application):
 
 
 def parse_field(pure_html):
-    class Mock:
-        attrs = {'d': None}
+    def inner():
+        for td in BeautifulSoup(pure_html, "html.parser").find_all("td"):
+            path = td.find('div', class_='cell-value').find('path')
+            if path is None:
+                yield 0
+            else:
+                yield DIGEST[path.attrs['d']]
 
-    def get_path(e): return e.find('div', class_='cell-value').find('path')
-
-    def get_num(e): return DIGEST.get((get_path(e) or Mock()).attrs['d'])
-
-    soup = BeautifulSoup(pure_html, 'html.parser')
-    f = [get_num(e) for e in soup.find_all('td')]
-    return [list(k) for k in zip(*[iter(f)] * 9)]
-
-
-async def solve(field_):
-    return c_sudoku.solve(field_)
+    return [*map(list, zip(*[inner()] * 9))]
 
 
-def pretty_print(field):
-    def it_():
-        for row in field:
-            for e in row:
-                yield e or '.'
-
-    it = it_()
-
-    def get_three():
-        return ' '.join([next(it) for _ in range(3)])
-
-    for i in range(3):
-        for _ in range(3):
-            print(get_three(), '|', get_three(), '|', get_three())
-        if i != 2:
-            print('-' * (9 + 2 + 2 * 5))
+def pretty_print(field: list[list[int]]) -> str:
+    it = map(lambda x: str(x or "."), itertools.chain(*field))
+    by_3 = map(" ".join, zip(*[it] * 3))
+    by_9 = map(" | ".join, zip(*[by_3] * 3))
+    total = map('\n'.join, zip(*[by_9] * 3))
+    return ("\n" + "+".join(map("-".__mul__, (6, 7, 6))) + "\n").join(total)
 
 
 async def sudoku_handler(request):
-    start_at = time.time()
     ws = aiohttp.web.WebSocketResponse()
     await ws.prepare(request)
+
     async for msg in ws:
-        field = parse_field(msg.data)
-        print('New query:')
-        pretty_print(field)
-        print(base64.encodebytes(json.dumps(field).encode()).decode())
-        try:
-            if field := await solve(field):
-                await ws.send_json(field)
-                print('Result:')
-                pretty_print(field)
-            else:
-                await ws.send_json(dict(result=False))
-                print('Result not found')
-        except TimeoutError:
-            await ws.send_json(dict(result=False))
-            print('Timeout request')
-        print(f'at {time.time() - start_at} sec')
+        task = parse_field(msg.data)
+        logging.debug('New query:\n%s', pretty_print(task))
+        start_at = time.time()
+        solution = next(solver.solve_sudoku(task))
+        logging.debug('Result:\n%s\nin %s seconds', pretty_print(solution),
+                      time.time() - start_at)
+        await ws.send_json(solution)
         await ws.close()

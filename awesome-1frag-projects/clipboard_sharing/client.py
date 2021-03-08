@@ -45,7 +45,8 @@ class WriteOnCopy(threading.Thread):
 async def main():
     global queue
     queue = janus.Queue()
-    url = input('set url: ')
+    host = input('set host: ') or '192.168.0.104'
+    url = f'ws://{host}:8080/start/asd'
     WriteOnCopy().start()
 
     async with aiohttp.ClientSession() as session:
